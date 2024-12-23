@@ -1,6 +1,6 @@
 "use client"
 import Link from "next/link";
-import { useRef, createRef, useMemo } from "react";
+import { createRef, useMemo } from "react";
 import { Button } from "../ui/button";
 import { Card } from "../ui/card";
 import { Input } from "../ui/input";
