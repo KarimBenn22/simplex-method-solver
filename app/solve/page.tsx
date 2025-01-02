@@ -97,7 +97,7 @@ export default function Solve({searchParams}: {searchParams: simplexUrlParams}) 
                         <div>
                             <h3 className="font-semibold mb-2">Objective Function Value</h3>
                             <p className="text-2xl font-bold">
-                                {objectiveFunctionValue.toFixed(2)}
+                                {(objectiveFunctionValue * -1).toFixed(2)}
                             </p>
                         </div>
                     </div>
