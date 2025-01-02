@@ -12,6 +12,21 @@ interface SimplexConstraints {
     b: number[]
 }
 
+export interface SimplexState {
+    table: number[][],
+    baseVariables: string[],
+    nonBaseVariables: string[]
+}
+
+const generateVariableNames = (numDecisionVars: number, numConstraints: number): { 
+    decisionVars: string[], 
+    slackVars: string[] 
+} => {
+    const decisionVars = Array.from({ length: numDecisionVars }, (_, i) => `x${i + 1}`);
+    const slackVars = Array.from({ length: numConstraints }, (_, i) => `s${i + 1}`);
+    return { decisionVars, slackVars };
+};
+
 const extractSimplex = (urlParams: simplexUrlParams): {
     objectiveFunction: number[],
     simplexConstraints: SimplexConstraints
@@ -61,6 +76,7 @@ const extractPivotLine = (table: number[][]) => {
 
     return pivotLineIndex;
 }
+
 const extractPivotColumn = (table: number[][]) => {
     const lastRow = table[table.length - 1];
     const pivotColIndex = lastRow.slice(0, lastRow.length - 1).reduce((maxIndex, currentValue, currentIndex, array) =>
@@ -73,37 +89,59 @@ const isSolution = (table: number[][]) => {
     return lastRow.every(value => value <= 0);
 }
 
-const solveSimplex = (table: number[][]) => {
-    let tables = new Array<number[][]>();
+const solveSimplex = (table: number[][], decisionVars: string[], slackVars: string[]) => {
+    let states: SimplexState[] = [];
     let tableCopy = [...table];
-    tables.push([...tableCopy]);
+    
+    // Initial state
+    states.push({
+        table: [...tableCopy],
+        baseVariables: slackVars,
+        nonBaseVariables: decisionVars
+    });
+
     while (!isSolution(tableCopy)) {
-        const pivoteLineIndex = extractPivotLine(tableCopy);
+        const pivotLineIndex = extractPivotLine(tableCopy);
         const pivotColIndex = extractPivotColumn(tableCopy);
 
         // Add null checks
-        if (pivoteLineIndex === undefined || pivotColIndex === undefined) {
+        if (pivotLineIndex === undefined || pivotColIndex === undefined) {
             console.error('Could not find pivot line or column');
             break; // Exit the loop if no valid pivot is found
         }
 
-        const pivot = tableCopy[pivoteLineIndex][pivotColIndex];
-        tableCopy[pivoteLineIndex] = tableCopy[pivoteLineIndex].map((value, index) => value / pivot);
+        // Swap base and non-base variables
+        const enteringVar = states[states.length - 1].nonBaseVariables[pivotColIndex];
+        const leavingVar = states[states.length - 1].baseVariables[pivotLineIndex];
+
+        const pivot = tableCopy[pivotLineIndex][pivotColIndex];
+        tableCopy[pivotLineIndex] = tableCopy[pivotLineIndex].map((value, index) => value / pivot);
+        
         for (let i = 0; i < tableCopy.length; i++) {
-            if (i !== pivoteLineIndex) {
+            if (i !== pivotLineIndex) {
                 const factor = tableCopy[i][pivotColIndex];
                 tableCopy[i] = tableCopy[i].map((value, index) => 
-                    value - factor * tableCopy[pivoteLineIndex][index]
+                    value - factor * tableCopy[pivotLineIndex][index]
                 );
             }
         }
-        tables.push([...tableCopy]);
+
+        // Update base and non-base variables
+        const newBaseVariables = [...states[states.length - 1].baseVariables];
+        const newNonBaseVariables = [...states[states.length - 1].nonBaseVariables];
+        
+        newBaseVariables[pivotLineIndex] = enteringVar;
+        const nonBaseIndex = newNonBaseVariables.indexOf(enteringVar);
+        newNonBaseVariables[nonBaseIndex] = leavingVar;
+
+        states.push({
+            table: [...tableCopy],
+            baseVariables: newBaseVariables,
+            nonBaseVariables: newNonBaseVariables
+        });
     }
-    return tables;
+    return states;
 }
-
-
-
 
 export const useSimplex = (urlParams: simplexUrlParams) => {
     // Validate input parameters
@@ -119,7 +157,13 @@ export const useSimplex = (urlParams: simplexUrlParams) => {
         throw new Error('Unable to extract valid simplex problem parameters');
     }
 
-    // Get first table ready,
+    // Generate variable names
+    const { decisionVars, slackVars } = generateVariableNames(
+        urlParams.variables, 
+        urlParams.constraints
+    );
+
+    // Get first table ready
     let sc = [...simplexConstraints.coefficients];
 
     // Add slack variables to each constraint
@@ -140,7 +184,8 @@ export const useSimplex = (urlParams: simplexUrlParams) => {
         0 // Last column for the constant term
     ];
     const table = [...tableWithSlackVariables, objectiveFunctionRow];
+    
     return {
-        tables: solveSimplex(table),
+        tables: solveSimplex(table, decisionVars, slackVars),
     };
 }
