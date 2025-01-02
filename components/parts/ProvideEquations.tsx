@@ -14,27 +14,31 @@ interface ProvideEquationsProps {
 
 const ProvideEquations = ({ numberOfVariables, numberOfConstraints, fun }: ProvideEquationsProps) => {
     const router = useRouter();
-    const objectiveRefs = useMemo(() => 
+    const objectiveRefs = useMemo(() =>
         Array.from({ length: numberOfVariables }, () => createRef<HTMLInputElement>())
-    , [numberOfVariables]);
+        , [numberOfVariables]);
 
-    const constraintRefs = useMemo(() => 
-        Array.from({ length: numberOfConstraints }, () => 
+    const constraintRefs = useMemo(() =>
+        Array.from({ length: numberOfConstraints }, () =>
             Array.from({ length: numberOfVariables }, () => createRef<HTMLInputElement>())
         )
-    , [numberOfVariables, numberOfConstraints]);
+        , [numberOfVariables, numberOfConstraints]);
+
+    const constraintBRefs = useMemo(() =>
+        Array.from({ length: numberOfConstraints }, () => createRef<HTMLInputElement>())
+        , [numberOfConstraints]);
 
     const buildQueryString = () => {
         const objFunc = objectiveRefs
             .map((ref, i) => `x${i + 1}=${ref.current?.value || 0}`)
             .join('&');
-        
+
         const constraints = constraintRefs
             .map((constraint, cIndex) => {
                 const constraintVars = constraint
                     .map((ref, vIndex) => `C${cIndex + 1}_x${vIndex + 1}=${ref.current?.value || 0}`)
                     .join('&');
-                const constraintB = `C${cIndex + 1}_b=${constraint[0].current?.parentElement?.parentElement?.nextElementSibling?.querySelector('input')?.value || 0}`;
+                const constraintB = `C${cIndex + 1}_b=${constraintBRefs[cIndex].current?.value || 0}`;
                 return `${constraintVars}&${constraintB}`;
             })
             .join('&');
@@ -52,9 +56,9 @@ const ProvideEquations = ({ numberOfVariables, numberOfConstraints, fun }: Provi
                             {objectiveRefs.map((ref, variableIndex) => (
                                 <div key={variableIndex} className="flex items-center space-x-3">
                                     <div className="flex items-center space-x-1 font-[family-name:var(--font-geist-mono)]">
-                                        <Input 
+                                        <Input
                                             ref={ref}
-                                            className="w-14" 
+                                            className="w-14"
                                             type="number"
                                             defaultValue={0}
                                         />
@@ -72,9 +76,9 @@ const ProvideEquations = ({ numberOfVariables, numberOfConstraints, fun }: Provi
                                     {constraint.map((ref, variableIndex) => (
                                         <div key={variableIndex} className="flex items-center space-x-3">
                                             <div className="flex items-center space-x-1 font-[family-name:var(--font-geist-mono)]">
-                                                <Input 
+                                                <Input
                                                     ref={ref}
-                                                    className="w-14" 
+                                                    className="w-14"
                                                     type="number"
                                                     defaultValue={0}
                                                 />
@@ -85,8 +89,9 @@ const ProvideEquations = ({ numberOfVariables, numberOfConstraints, fun }: Provi
                                     ))}
                                 </div>
                                 <span className="text-md text-blue-600">≤</span>
-                                <Input 
-                                    className="w-14" 
+                                <Input
+                                    ref={constraintBRefs[constraintIndex]}
+                                    className="w-14"
                                     type="number"
                                     defaultValue={0}
                                     placeholder="b"
@@ -97,7 +102,7 @@ const ProvideEquations = ({ numberOfVariables, numberOfConstraints, fun }: Provi
                     <Button
                         className="w-full mt-4 text-white font-[family-name:var(--font-geist-mono)]"
                         size={"lg"}
-                        onClick={() => {router.push(buildQueryString())}}
+                        onClick={() => { router.push(buildQueryString()) }}
                     >
                         <Link href={buildQueryString()}>SOLVE</Link>
                     </Button>
