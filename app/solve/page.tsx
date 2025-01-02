@@ -8,7 +8,6 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 
 export default function Solve({searchParams}: {searchParams: simplexUrlParams}) {
     const {tables} = useSimplex(searchParams);
@@ -27,7 +26,7 @@ export default function Solve({searchParams}: {searchParams: simplexUrlParams}) 
     // Extract x values from the final state
     const xValues = initialNonBaseVariables
         .filter(v => v.startsWith('x'))
-        .map((variable, index) => ({
+        .map((variable) => ({
             variable, 
             value: finalTable.baseVariables.includes(variable) 
                 ? finalTable.table[finalTable.baseVariables.indexOf(variable)][finalTable.table[0].length - 1]
