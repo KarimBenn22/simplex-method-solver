@@ -65,13 +65,14 @@ const GenerateModel = () => {
                             <span>Maximize</span>
                         </div>
                         <div
-                            className={`rounded-full p-2 px-4 border-2 border-dashed flex items-center space-x-2 cursor-pointer transition-colors select-none
+                            className={`rounded-full p-2 px-4 border-2 border-dashed flex items-center space-x-2 transition-colors select-none cursor-not-allowed
                                 ${optimizationType === 'minimize'
                                     ? 'border-primary bg-primary/10'
                                     : 'border-muted-foreground/50'}`}
-                            onClick={() => setOptimizationType('minimize')}
+                            
                         >
                             <Checkbox
+                                disabled
                                 checked={optimizationType === 'minimize'}
                                 onCheckedChange={() => setOptimizationType('minimize')}
                             />
